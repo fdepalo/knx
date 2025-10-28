@@ -1,0 +1,274 @@
+# KNX TP Example with DPT Helper Functions
+# This example shows how to use simplified DPT decoding in triggers
+
+substitutions:
+  device_name: knx-dpt-helpers
+  friendly_name: "KNX DPT Helpers Example"
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# WiFi configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${device_name}-fallback"
+    password: !secret ap_password
+
+# UART for KNX TP transceiver
+uart:
+  id: knx_uart
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 19200
+  parity: EVEN
+  stop_bits: 1
+
+# External KNX TP component
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ knx_tp ]
+
+# Global variables to store decoded values
+globals:
+  - id: current_temperature
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: current_humidity
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: light_is_on
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# KNX TP Component with DPT Helper Functions
+knx_tp:
+  physical_address: "1.1.200"
+  uart_id: knx_uart
+
+  group_addresses:
+    - id: temp_sensor
+      address: "1/0/1"
+    - id: humidity_sensor
+      address: "1/0/2"
+    - id: light_switch
+      address: "0/0/1"
+    - id: brightness_sensor
+      address: "1/1/1"
+    - id: blind_position
+      address: "4/0/1"
+
+  # Using DPT helper functions - MUCH SIMPLER!
+  on_group_address:
+
+    # ============================================
+    # Temperature (DPT 9.001)
+    # ============================================
+    - address: "1/0/1"
+      then:
+        - lambda: |-
+            // ✅ Generic DPT decoder - user formats the value!
+            using namespace esphome::knx_tp::dpt_helpers;
+
+            float temp = decode_dpt9(data);  // DPT 9.001 = temperature °C
+            id(current_temperature) = temp;
+
+            ESP_LOGI("temp", "Temperature: %.1f°C", temp);
+
+            // Temperature-based automation
+            if (temp > 25.0) {
+              ESP_LOGW("temp", "Too hot! Turning on cooling");
+              id(cooling_fan).turn_on();
+            } else if (temp < 18.0) {
+              ESP_LOGW("temp", "Too cold! Turning on heating");
+              id(heating).turn_on();
+            } else {
+              // Comfortable temperature
+              id(cooling_fan).turn_off();
+              id(heating).turn_off();
+            }
+
+    # ============================================
+    # Humidity (DPT 9.007)
+    # ============================================
+    - address: "1/0/2"
+      then:
+        - lambda: |-
+            using namespace esphome::knx_tp::dpt_helpers;
+
+            float humidity = decode_dpt9(data);  // DPT 9.007 = humidity %
+            id(current_humidity) = humidity;
+
+            ESP_LOGI("humidity", "Humidity: %.1f%%", humidity);
+
+            // Humidity-based automation
+            if (humidity > 70.0) {
+              ESP_LOGW("humidity", "Too humid! Turning on dehumidifier");
+              id(dehumidifier).turn_on();
+            } else if (humidity < 30.0) {
+              ESP_LOGW("humidity", "Too dry! Turning on humidifier");
+              id(humidifier).turn_on();
+            }
+
+    # ============================================
+    # Light Switch (DPT 1.001)
+    # ============================================
+    - address: "0/0/1"
+      then:
+        - lambda: |-
+            using namespace esphome::knx_tp::dpt_helpers;
+
+            bool light_on = decode_dpt1(data);  // DPT 1.001 = switch
+            id(light_is_on) = light_on;
+
+            ESP_LOGI("light", "Light is now: %s", light_on ? "ON" : "OFF");
+
+            // Sync with local LED
+            if (light_on) {
+              id(status_led).turn_on();
+            } else {
+              id(status_led).turn_off();
+            }
+
+    # ============================================
+    # Brightness (DPT 9.004)
+    # ============================================
+    - address: "1/1/1"
+      then:
+        - lambda: |-
+            using namespace esphome::knx_tp::dpt_helpers;
+
+            float brightness = decode_dpt9(data);  // DPT 9.004 = brightness lux
+
+            ESP_LOGI("brightness", "Brightness: %.0f lux", brightness);
+
+            // Auto-light based on brightness
+            if (brightness < 100.0) {
+              ESP_LOGI("brightness", "Dark! Turning on lights");
+              id(auto_light).turn_on();
+            } else if (brightness > 500.0) {
+              ESP_LOGI("brightness", "Bright enough! Turning off lights");
+              id(auto_light).turn_off();
+            }
+
+    # ============================================
+    # Blind Position (DPT 5.001 - Percentage)
+    # ============================================
+    - address: "4/0/1"
+      then:
+        - lambda: |-
+            using namespace esphome::knx_tp::dpt_helpers;
+
+            float position = decode_dpt5_percentage(data);  // DPT 5.001 = percentage 0-100%
+
+            ESP_LOGI("blind", "Blind position: %.0f%%", position);
+
+            // Auto-adjust blinds based on position
+            if (position > 80.0) {
+              ESP_LOGI("blind", "Blinds mostly closed");
+            } else if (position < 20.0) {
+              ESP_LOGI("blind", "Blinds mostly open");
+            }
+
+# ============================================
+# ESPHome Components
+# ============================================
+
+# Switches controlled by KNX
+switch:
+  - platform: gpio
+    name: "Cooling Fan"
+    id: cooling_fan
+    pin: GPIO4
+
+  - platform: gpio
+    name: "Heating"
+    id: heating
+    pin: GPIO5
+
+  - platform: gpio
+    name: "Dehumidifier"
+    id: dehumidifier
+    pin: GPIO18
+
+  - platform: gpio
+    name: "Humidifier"
+    id: humidifier
+    pin: GPIO19
+
+  - platform: gpio
+    name: "Auto Light"
+    id: auto_light
+    pin: GPIO21
+
+# Status LED
+output:
+  - platform: gpio
+    pin: GPIO2
+    id: status_led
+
+# Sensors to display decoded values
+sensor:
+  - platform: template
+    name: "Current Temperature"
+    lambda: 'return id(current_temperature);'
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    update_interval: 60s
+
+  - platform: template
+    name: "Current Humidity"
+    lambda: 'return id(current_humidity);'
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    update_interval: 60s
+
+# Binary sensor for light state
+binary_sensor:
+  - platform: template
+    name: "Light Status"
+    lambda: 'return id(light_is_on);'
+
+# ============================================
+# Comparison: OLD vs NEW approach
+# ============================================
+
+# ❌ OLD WAY (verbose, error-prone):
+# - address: "1/0/1"
+#   then:
+#     - lambda: |-
+#         if (data.size() >= 2) {
+#           uint16_t raw = (data[0] << 8) | data[1];
+#           int16_t m = (raw & 0x7FF);
+#           if (raw & 0x8000) m = -(~m & 0x7FF) - 1;
+#           int8_t e = (raw >> 11) & 0x0F;
+#           float temp = 0.01f * m * (1 << e);
+#           ESP_LOGI("temp", "Temperature: %.1f°C", temp);
+#         }
+
+# ✅ NEW WAY (clean, readable):
+# - address: "1/0/1"
+#   then:
+#     - lambda: |-
+#         using namespace esphome::knx_tp::dpt_helpers;
+#         float temp = decode_dpt9(data);  // DPT 9.001 = temperature °C
+#         ESP_LOGI("temp", "Temperature: %.1f°C", temp);

@@ -1,0 +1,158 @@
+# KNX TP Example with Triggers
+# This example demonstrates how to use on_telegram and on_group_address triggers
+
+substitutions:
+  device_name: knx-triggers-test
+  friendly_name: "KNX Triggers Test"
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: VERBOSE
+  logs:
+    knx_tp: VERBOSE
+
+# WiFi configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "${device_name}-fallback"
+    password: !secret ap_password
+
+# UART for KNX TP transceiver
+uart:
+  id: knx_uart
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 19200
+  parity: EVEN
+  stop_bits: 1
+
+# External KNX TP component
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ knx_tp ]
+
+# KNX TP Component with Triggers
+knx_tp:
+  physical_address: "1.1.200"
+  uart_id: knx_uart
+
+  group_addresses:
+    - id: living_light
+      address: "0/0/1"
+    - id: bedroom_light
+      address: "0/0/2"
+    - id: temperature_sensor
+      address: "1/0/1"
+    - id: debug_output
+      address: "9/7/255"
+
+  # Generic telegram trigger - Called for EVERY telegram received
+  # Use with caution on busy KNX buses!
+  # Can be disabled with: -DUSE_KNX_ON_TELEGRAM=0
+  on_telegram:
+    - logger.log:
+        format: "📨 KNX Telegram: GA=%s, Size=%d bytes"
+        args: ['group_address.c_str()', 'data.size()']
+
+    # Example: Log all telegrams to a specific debug GA
+    - lambda: |-
+        ESP_LOGD("knx_monitor", "Received on %s", group_address.c_str());
+
+        // You can filter here
+        if (group_address == "0/0/1") {
+          ESP_LOGI("knx", "Living room light changed!");
+        }
+
+  # Specific group address triggers - Only called for matching GA
+  # More efficient than on_telegram!
+  # Can be disabled with: -DUSE_KNX_ON_GROUP_ADDRESS=0
+  on_group_address:
+    # Trigger for living room light
+    - address: "0/0/1"
+      then:
+        - logger.log: "🔆 Living room light changed via KNX!"
+        - lambda: |-
+            if (data.size() > 0) {
+              bool state = data[0] & 0x01;
+              ESP_LOGI("living", "Light is now: %s", state ? "ON" : "OFF");
+
+              // Control local LED based on KNX state
+              id(status_led).turn_on();
+            }
+
+    # Trigger for bedroom light
+    - address: "0/0/2"
+      then:
+        - logger.log: "🛏️ Bedroom light changed via KNX!"
+        - lambda: |-
+            if (data.size() > 0) {
+              bool state = data[0] & 0x01;
+              ESP_LOGI("bedroom", "Light is now: %s", state ? "ON" : "OFF");
+            }
+
+    # Trigger for temperature sensor
+    - address: "1/0/1"
+      then:
+        - logger.log: "🌡️ Temperature update from KNX!"
+        - lambda: |-
+            // Decode DPT 9 (2-byte float) manually
+            if (data.size() >= 2) {
+              uint16_t raw = (data[0] << 8) | data[1];
+              int16_t m = (raw & 0x7FF);
+              if (raw & 0x8000) m = -(~m & 0x7FF) - 1;
+              int8_t e = (raw >> 11) & 0x0F;
+              float temp = 0.01f * m * (1 << e);
+
+              ESP_LOGI("temp", "Temperature: %.2f°C", temp);
+
+              // Example: Control heating based on temperature
+              if (temp < 18.0) {
+                ESP_LOGW("temp", "Too cold! Turning on heating...");
+                // id(heating).turn_on();
+              } else if (temp > 25.0) {
+                ESP_LOGW("temp", "Too hot! Turning on cooling...");
+                // id(cooling).turn_on();
+              }
+            }
+
+# Simple switch to test KNX communication
+switch:
+  - platform: knx_tp
+    name: "Living Room Light"
+    command_ga: living_light
+    state_ga: living_light
+    id: living_switch
+
+  - platform: knx_tp
+    name: "Bedroom Light"
+    command_ga: bedroom_light
+    state_ga: bedroom_light
+    id: bedroom_switch
+
+# Status LED
+output:
+  - platform: gpio
+    pin: GPIO2
+    id: status_led
+
+# Optional: Web server for debugging
+web_server:
+  port: 80
+
+# Optional: Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key

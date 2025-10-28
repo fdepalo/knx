@@ -1,0 +1,309 @@
+# Advanced KNX TP Example Configuration for ESPHome
+# This example shows multiple KNX devices and integrations
+
+substitutions:
+  device_name: knx-gateway-advanced
+  friendly_name: "KNX Gateway Advanced"
+  # KNX Physical Address
+  knx_physical_addr: "1.1.155"
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+  # You can set specific log levels for components
+  logs:
+    knx_tp: DEBUG
+    uart: INFO
+
+# WiFi configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Static IP (optional, recommended for gateways)
+  manual_ip:
+    static_ip: 192.168.1.100
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+  ap:
+    ssid: "${device_name}-fallback"
+    password: !secret ap_password
+
+# Enable Home Assistant API (optional)
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Enable OTA updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# Time component for KNX master clock
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Rome
+
+# UART for KNX TP transceiver
+uart:
+  id: knx_uart
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 19200
+  parity: EVEN
+  stop_bits: 1
+  # Enable UART debugging (optional, for troubleshooting)
+  # debug:
+  #   direction: BOTH
+  #   dummy_receiver: false
+
+# External KNX TP component
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ knx_tp ]
+
+# KNX TP Component Configuration
+knx_tp:
+  physical_address: ${knx_physical_addr}
+  uart_id: knx_uart
+  # SAV pin for BCU connection detection (optional)
+  # HIGH = BCU connected to bus, LOW = BCU disconnected
+  sav_pin: GPIO5
+  # ESPHome as KNX master clock (broadcasts time every minute)
+  time_id: homeassistant_time
+  time_broadcast_ga: knx_clock_datetime
+  time_broadcast_interval: 60s  # Broadcast every 60 seconds
+
+  group_addresses:
+    # Lighting
+    - id: living_room_light
+      address: "0/0/1"
+    - id: living_room_dimmer
+      address: "0/1/1"
+    - id: bedroom_light
+      address: "0/0/2"
+    - id: kitchen_light
+      address: "0/0/3"
+    - id: hallway_light
+      address: "0/0/4"
+
+    # Sensors
+    - id: living_room_temp
+      address: "1/0/1"
+    - id: living_room_humidity
+      address: "1/0/2"
+    - id: outdoor_temp
+      address: "1/0/10"
+    - id: bedroom_temp
+      address: "1/0/3"
+
+    # Motion sensors
+    - id: living_room_motion
+      address: "2/0/1"
+    - id: bedroom_motion
+      address: "2/0/2"
+    - id: hallway_motion
+      address: "2/0/3"
+
+    # Climate control
+    - id: living_room_hvac_mode
+      address: "3/0/1"
+    - id: living_room_setpoint
+      address: "3/0/2"
+    - id: living_room_action
+      address: "3/0/3"
+    - id: living_room_preset_comfort
+      address: "3/0/4"
+    - id: living_room_preset_eco
+      address: "3/0/5"
+    - id: living_room_preset_away
+      address: "3/0/6"
+    - id: living_room_preset_sleep
+      address: "3/0/7"
+    - id: bedroom_setpoint
+      address: "3/0/10"
+
+    # Blinds/Covers
+    - id: bedroom_blinds_position
+      address: "4/0/1"
+    - id: living_room_blinds_position
+      address: "4/0/2"
+
+    # Energy monitoring
+    - id: total_power
+      address: "5/0/1"
+    - id: solar_power
+      address: "5/0/2"
+
+    # Clock/Time
+    - id: knx_clock_datetime
+      address: "6/0/1"  # DPT 19.001 - Date and Time
+    - id: knx_clock_time
+      address: "6/0/2"  # DPT 10.001 - Time of Day
+    - id: knx_clock_date
+      address: "6/0/3"  # DPT 11.001 - Date
+
+# Binary Sensors (Motion, Window contacts, etc.)
+binary_sensor:
+  - platform: knx_tp
+    name: "Living Room Motion"
+    state_ga: living_room_motion
+    device_class: motion
+
+  - platform: knx_tp
+    name: "Bedroom Motion"
+    state_ga: bedroom_motion
+    device_class: motion
+
+  - platform: knx_tp
+    name: "Hallway Motion"
+    state_ga: hallway_motion
+    device_class: motion
+
+# Sensors (Temperature, Humidity, Power, etc.)
+sensor:
+  - platform: knx_tp
+    name: "Living Room Temperature"
+    state_ga: living_room_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+  - platform: knx_tp
+    name: "Living Room Humidity"
+    state_ga: living_room_humidity
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: humidity
+    state_class: measurement
+
+  - platform: knx_tp
+    name: "Outdoor Temperature"
+    state_ga: outdoor_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+  - platform: knx_tp
+    name: "Bedroom Temperature"
+    state_ga: bedroom_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+  - platform: knx_tp
+    name: "Total Power Consumption"
+    state_ga: total_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+
+  - platform: knx_tp
+    name: "Solar Power Production"
+    state_ga: solar_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+
+# Switches (Simple ON/OFF devices)
+switch:
+  - platform: knx_tp
+    name: "Kitchen Light"
+    command_ga: kitchen_light
+    icon: "mdi:lightbulb"
+
+  - platform: knx_tp
+    name: "Hallway Light"
+    command_ga: hallway_light
+    icon: "mdi:lightbulb"
+
+# Lights (with optional dimming)
+light:
+  - platform: knx_tp
+    name: "Living Room Light"
+    switch_ga: living_room_light
+    brightness_ga: living_room_dimmer
+
+  - platform: knx_tp
+    name: "Bedroom Light"
+    switch_ga: bedroom_light
+
+# Climate (Thermostats, HVAC)
+climate:
+  - platform: knx_tp
+    name: "Living Room Thermostat"
+    temperature_ga: living_room_temp
+    setpoint_ga: living_room_setpoint
+    mode_ga: living_room_hvac_mode
+    action_ga: living_room_action
+    preset_comfort_ga: living_room_preset_comfort
+    preset_eco_ga: living_room_preset_eco
+    preset_away_ga: living_room_preset_away
+    preset_sleep_ga: living_room_preset_sleep
+
+# Covers (Blinds, Shutters)
+cover:
+  - platform: knx_tp
+    name: "Bedroom Blinds"
+    move_ga: bedroom_blinds_position
+    device_class: blind
+
+  - platform: knx_tp
+    name: "Living Room Blinds"
+    move_ga: living_room_blinds_position
+    device_class: blind
+
+# Numbers (Setpoints, etc.)
+# Note: min_value, max_value, step are set internally by the component
+number:
+  - platform: knx_tp
+    name: "Bedroom Temperature Setpoint"
+    command_ga: bedroom_setpoint
+
+# Text Sensors (for displaying date/time from KNX)
+text_sensor:
+  - platform: knx_tp
+    name: "KNX Clock DateTime"
+    state_ga: knx_clock_datetime
+    dpt_type: "19"  # DPT 19.001 - Date and Time
+    icon: "mdi:clock-digital"
+
+  - platform: knx_tp
+    name: "KNX Clock Time"
+    state_ga: knx_clock_time
+    dpt_type: "10"  # DPT 10.001 - Time of Day
+    icon: "mdi:clock-outline"
+
+  - platform: knx_tp
+    name: "KNX Clock Date"
+    state_ga: knx_clock_date
+    dpt_type: "11"  # DPT 11.001 - Date
+    icon: "mdi:calendar"
+
+# Status LED (optional, for visual feedback)
+status_led:
+  pin: GPIO2
+
+# Web Server (optional, for debugging)
+web_server:
+  port: 80
+  auth:
+    username: admin
+    password: !secret web_password

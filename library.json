@@ -1,0 +1,26 @@
+{
+  "name": "ESPHome KNX TP",
+  "version": "0.1.0",
+  "description": "KNX Twisted Pair component for ESPHome using Thelsing KNX stack",
+  "keywords": "knx, esphome, home-automation, iot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fxmike08/esphome-knx-tp.git"
+  },
+  "authors": [
+    {
+      "name": "fxmike08",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": ["espressif32", "espressif8266"],
+  "dependencies": [
+    {
+      "name": "knx",
+      "version": "^0.9.9",
+      "platforms": "*"
+    }
+  ]
+}

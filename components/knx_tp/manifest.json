@@ -1,0 +1,8 @@
+{
+  "name": "KNX TP",
+  "codeowners": ["@fxmike08"],
+  "dependencies": ["network"],
+  "documentation": "https://github.com/fxmike08/knx_tp",
+  "requirements": [],
+  "version": "1.0.0"
+}

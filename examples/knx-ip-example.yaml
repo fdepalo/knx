@@ -1,0 +1,131 @@
+# KNX IP Example Configuration for ESPHome
+# This example shows how to use the KNX IP component for network-based KNX communication
+
+substitutions:
+  device_name: knx-ip-gateway
+  friendly_name: "KNX IP Gateway"
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+  logs:
+    knx_ip: DEBUG
+
+# WiFi configuration - REQUIRED for KNX-IP
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Static IP recommended for KNX gateways
+  manual_ip:
+    static_ip: 192.168.1.100
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+  # Enable fallback hotspot
+  ap:
+    ssid: "${device_name}-fallback"
+    password: !secret ap_password
+
+# Enable Home Assistant API (optional)
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Enable OTA updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# Time component for KNX master clock (optional)
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Rome
+
+# External KNX IP component
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ knx_ip ]
+
+# KNX IP Component Configuration
+knx_ip:
+  # Your KNX physical address (format: area.line.device)
+  # Example: 1.1.200 means Area 1, Line 1, Device 200
+  physical_address: "1.1.200"
+
+  # IP Configuration
+  # Mode: routing (multicast) or tunneling (gateway connection)
+  routing_mode: true  # true = routing, false = tunneling
+
+  # For routing mode (multicast):
+  multicast_address: "224.0.23.12"  # Standard KNX multicast
+  gateway_port: 3671                # Standard KNX/IP port
+
+  # For tunneling mode (uncomment if routing_mode: false):
+  # gateway_ip: "192.168.1.50"      # IP of your KNX/IP gateway
+  # gateway_port: 3671
+
+  # Optional: Time broadcast (ESPHome as KNX master clock)
+  time_id: homeassistant_time
+  time_broadcast_ga: knx_clock_datetime
+  time_broadcast_interval: 60s  # Broadcast every 60 seconds
+
+  # Define group addresses to use
+  group_addresses:
+    # Lighting
+    - id: living_room_light
+      address: "0/0/1"
+
+    # Temperature sensors
+    - id: living_room_temp
+      address: "1/0/1"
+    - id: outdoor_temp
+      address: "1/0/10"
+
+    # HVAC
+    - id: living_room_setpoint
+      address: "3/0/2"
+
+    # Time/Clock
+    - id: knx_clock_datetime
+      address: "6/0/1"  # DPT 19.001 - Date and Time
+
+# Sensors - Read values from KNX network
+sensor:
+  - platform: knx_ip
+    name: "Living Room Temperature"
+    state_ga: living_room_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+  - platform: knx_ip
+    name: "Outdoor Temperature"
+    state_ga: outdoor_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+
+# Status LED (optional, for visual feedback)
+status_led:
+  pin: GPIO2
+
+# Web Server (optional, for debugging)
+web_server:
+  port: 80
+  auth:
+    username: admin
+    password: !secret web_password

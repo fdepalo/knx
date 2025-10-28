@@ -1,0 +1,83 @@
+INFO ESPHome 2025.10.0
+INFO Reading configuration knx-example-advanced.yaml...
+WARNING GPIO2 is a strapping PIN and should only be used for I/O with care.
+Attaching external pullup/down resistors to strapping pins can cause unexpected failures.
+See https://esphome.io/guides/faq.html#why-am-i-getting-a-warning-about-strapping-pins
+INFO Generating C++ source...
+INFO Compiling app...
+Processing knx-gateway-advanced (board: esp32dev; framework: espidf; platform: https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip)
+--------------------------------------------------------------------------------
+INFO Package configuration completed successfully
+INFO Package configuration completed successfully
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+ - framework-espidf @ 3.50402.0 (5.4.2) 
+ - tool-cmake @ 3.30.2 
+ - tool-esp-rom-elfs @ 2024.10.11 
+ - tool-esptoolpy @ 5.0.2 
+ - tool-mklittlefs @ 3.2.0 
+ - tool-ninja @ 1.13.1 
+ - tool-scons @ 4.40801.0 (4.8.1) 
+ - toolchain-xtensa-esp-elf @ 14.2.0+20241119
+Reading CMake configuration...
+Dependency Graph
+|-- knx @ 1.5.0+sha.598a997
+|-- noise-c @ 0.1.10
+|-- ArduinoJson @ 7.4.2
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_connection.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_frame_helper.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_frame_helper_noise.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_pb2.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_pb2_service.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/api_server.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/list_entities.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/proto.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/api/subscribe_state.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/binary_sensor/automation.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/binary_sensor/binary_sensor.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/binary_sensor/filter.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/climate/climate.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/climate/climate_mode.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/climate/climate_traits.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/cover/cover.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/esp32/gpio.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/esp32/helpers.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/esp32/preferences.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/esphome/ota/ota_esphome.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/json/json_util.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/binary_sensor.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/climate.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/cover.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/dpt.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/knx_tp.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/light.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/number.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/sensor.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/switch.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/text_sensor.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/light/addressable_light.cpp.o
+src/esphome/components/knx_tp/climate.cpp: In member function 'virtual void esphome::knx_tp::KNXClimate::control(const esphome::climate::ClimateCall&)':
+src/esphome/components/knx_tp/climate.cpp:96:24: error: cannot convert 'esphome::optional<esphome::climate::ClimatePreset>' to 'esphome::climate::ClimatePreset'
+   96 |     send_preset_(this->preset);
+      |                  ~~~~~~^~~~~~
+      |                        |
+      |                        esphome::optional<esphome::climate::ClimatePreset>
+In file included from src/esphome/components/knx_tp/climate.cpp:1:
+src/esphome/components/knx_tp/climate.h:45:44: note:   initializing argument 1 of 'void esphome::knx_tp::KNXClimate::send_preset_(esphome::climate::ClimatePreset)'
+   45 |   void send_preset_(climate::ClimatePreset preset);
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+In file included from src/esphome/core/component.h:8,
+                 from src/esphome/components/climate/climate.h:3,
+                 from src/esphome/components/knx_tp/climate.h:3:
+src/esphome/components/knx_tp/climate.cpp:97:43: error: invalid 'static_cast' from type 'esphome::optional<esphome::climate::ClimatePreset>' to type 'int'
+   97 |     ESP_LOGD(TAG, "Preset changed to %d", static_cast<int>(this->preset));
+      |                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/esphome/core/log.h:99:100: note: in definition of macro 'esph_log_d'
+   99 |   ::esphome::esp_log_printf_(ESPHOME_LOG_LEVEL_DEBUG, tag, __LINE__, ESPHOME_LOG_FORMAT(format), ##__VA_ARGS__)
+      |                                                                                                    ^~~~~~~~~~~
+src/esphome/components/knx_tp/climate.cpp:97:5: note: in expansion of macro 'ESP_LOGD'
+   97 |     ESP_LOGD(TAG, "Preset changed to %d", static_cast<int>(this->preset));
+      |     ^~~~~~~~
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/light/automation.cpp.o
+Compiling .pioenvs/knx-gateway-advanced/src/esphome/components/light/esp_color_correction.cpp.o
+*** [.pioenvs/knx-gateway-advanced/src/esphome/components/knx_tp/climate.cpp.o] Error 1
+========================== [FAILED] Took 5.01 seconds ==========================

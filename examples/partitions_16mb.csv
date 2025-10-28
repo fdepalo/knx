@@ -1,0 +1,47 @@
+# ESP32-S3 Partition Table for 16MB Flash
+# Optimized for ESPHome with KNX components
+#
+# Name,       Type, SubType, Offset,   Size,     Flags
+# nvs:        Non-volatile storage for WiFi, credentials, etc.
+# otadata:    OTA data partition (which app to boot)
+# app0:       First OTA partition (main firmware)
+# app1:       Second OTA partition (for OTA updates)
+# spiffs:     File system for web server, logs, config
+# coredump:   Core dump partition for debugging crashes
+# factory:    Factory reset partition (optional)
+
+nvs,          data, nvs,     0x9000,   0x6000,
+otadata,      data, ota,     0xf000,   0x2000,
+phy_init,     data, phy,     0x11000,  0x1000,
+app0,         app,  ota_0,   0x20000,  0x400000,
+app1,         app,  ota_1,   0x420000, 0x400000,
+spiffs,       data, spiffs,  0x820000, 0x780000,
+coredump,     data, coredump,0xFA0000, 0x10000,
+nvs_key,      data, nvs_keys,0xFB0000, 0x1000,
+
+# Partition Details:
+# ==================
+# NVS (24KB):        WiFi credentials, settings, counters
+# OTA Data (8KB):    OTA boot partition selector
+# PHY Init (4KB):    RF calibration data
+# App0 (4MB):        Main firmware partition (~2MB typical usage)
+# App1 (4MB):        OTA update partition (allows large firmware)
+# SPIFFS (7.5MB):    Web server files, logs, configs (huge space for features)
+# Coredump (64KB):   Crash dumps for debugging
+# NVS Keys (4KB):    Encrypted NVS keys
+#
+# Total: ~16MB (0x1000000)
+#
+# With 16MB flash, you have:
+# - Large app partitions for feature-rich firmware
+# - 7.5MB SPIFFS for web UI, data logging, history
+# - Plenty of room for future expansion
+# - Core dumps for debugging production issues
+#
+# App partition size allows for:
+# - Full ESPHome framework
+# - Both KNX-TP and KNX-IP stacks
+# - Web server with assets
+# - Extensive logging
+# - Multiple entity types
+# - Future KNX Secure implementation

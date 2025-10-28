@@ -1,0 +1,70 @@
+esphome:
+  name: knx-simple-switch
+  platform: ESP32
+  board: esp32dev
+
+logger:
+
+# UART connection to KNX
+uart:
+  id: knx_uart
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 19200
+
+# KNX TP Component
+knx_tp:
+  uart_id: knx_uart
+  physical_address: "1.1.10"
+
+  # Define your KNX group addresses
+  group_addresses:
+    - id: my_light
+      address: "0/1/1"  # Replace with your group address
+
+# Switch that controls KNX group address
+switch:
+  - platform: knx_tp
+    name: "My Light"
+    command_ga_id: my_light    # Sends ON/OFF commands to this GA
+    state_ga_id: my_light      # Receives status updates from this GA
+
+# ============================================================================
+# Usage from Home Assistant:
+# ============================================================================
+#
+# After flashing, the switch will appear in Home Assistant as "My Light"
+#
+# - Turn ON  -> Sends DPT 1 value 0x01 to group address 0/1/1
+# - Turn OFF -> Sends DPT 1 value 0x00 to group address 0/1/1
+# - State updates from KNX bus are automatically reflected in Home Assistant
+#
+# ============================================================================
+
+# ============================================================================
+# Common Group Address Examples:
+# ============================================================================
+#
+# Lighting:
+#   - Light ON/OFF:    0/1/x  (DPT 1)
+#   - Dimming:         0/2/x  (DPT 3 or 5.001)
+#   - Brightness:      0/3/x  (DPT 5.001)
+#
+# Blinds/Shutters:
+#   - Up/Down:         1/1/x  (DPT 1)
+#   - Position:        1/2/x  (DPT 5.001)
+#   - Angle:           1/3/x  (DPT 5.003)
+#
+# Heating:
+#   - ON/OFF:          2/1/x  (DPT 1)
+#   - Setpoint:        2/2/x  (DPT 9.001)
+#   - Temperature:     2/3/x  (DPT 9.001)
+#
+# Outlets/Sockets:
+#   - ON/OFF:          3/1/x  (DPT 1)
+#
+# Scenes:
+#   - Scene trigger:   4/1/x  (DPT 1 or 17.001)
+#
+# Note: These are examples - actual addresses depend on your ETS project!
+# ============================================================================
